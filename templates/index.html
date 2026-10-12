@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HÀ ĐIỀN TRUNG HIẾU · ENCOM-OS12</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="grid-bg" aria-hidden="true"></div>
+
+  <div class="banner" role="marquee" aria-label="Lời nhắn mới nhất từ admin">
+    <span class="banner__label"><span class="dot"></span> LIVE .MSG</span>
+    <div class="banner__viewport">
+      <div class="banner__track" id="bannerTrack">
+        <span class="banner__item" id="bannerText">{{ banner }}</span>
+        <span class="banner__item" id="bannerTextClone" aria-hidden="true">{{ banner }}</span>
+      </div>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div class="container">
+      <section class="panel hero__panel" aria-labelledby="hero-name">
+        <div class="panel__bar">
+          <span class="panel__code">SYS | O12</span>
+          <span class="panel__title">ENCOM-OS12 // USER .PROFILE</span>
+          <span class="panel__status"><span class="dot"></span> REC</span>
+        </div>
+        <div class="hero__inner">
+          <div class="hero__photo">
+            <img src="{{ url_for('static', filename='img/avatar.png') }}" alt="Ảnh đại diện của Hà Điền Trung Hiếu" />
+          </div>
+          <div class="hero__text">
+            <p class="prompt">encom_root<span class="prompt__path">:~$</span> whoami<span class="caret" aria-hidden="true"></span></p>
+            <h1 class="hero__name" id="hero-name">HÀ ĐIỀN TRUNG HIẾU</h1>
+            <p class="hero__role">Sinh viên Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)</p>
+            <p class="hero__tagline">
+              Mình yêu thích xây dựng sản phẩm web, tự động hóa và triển khai hệ thống
+              trên Docker. Dưới đây là đôi nét về mình và cách liên hệ.
+            </p>
+            <div class="hero__actions">
+              <a class="btn btn--primary" href="#contact">TRANSMIT</a>
+              <a class="btn btn--ghost" href="#projects">XEM DỰ ÁN</a>
+            </div>
+            <ul class="readout" aria-label="Thông tin nhanh">
+              <li><span>LOC.</span> Việt Nam</li>
+              <li><span>STATUS</span> ONLINE</li>
+              <li><span>MODE</span> STUDENT</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="about" class="panel" aria-labelledby="about-title">
+      <div class="panel__bar">
+        <span class="panel__code">01</span>
+        <span class="panel__title">ABOUT .TXT</span>
+        <span class="panel__status">READ</span>
+      </div>
+      <div class="panel__body">
+        <h2 class="section__title" id="about-title">Giới thiệu</h2>
+        <p class="section__lead">
+          Mình là sinh viên năm 3, đang tìm hiểu sâu về lập trình frontend, IoT
+          và thích khám phá những thứ mới mẻ. Mục tiêu của mình là tạo ra những sản phẩm gọn gàng,
+          dễ triển khai và có ích cho người dùng.
+        </p>
+        <div class="stats">
+          <div class="stat"><span class="stat__num">3+</span><span class="stat__label">Năm học tập</span></div>
+          <div class="stat"><span class="stat__num">15+</span><span class="stat__label">Dự án cá nhân</span></div>
+          <div class="stat"><span class="stat__num">6</span><span class="stat__label">Công nghệ chính</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="skills" class="panel" aria-labelledby="skills-title">
+      <div class="panel__bar">
+        <span class="panel__code">02</span>
+        <span class="panel__title">STACK .CFG</span>
+        <span class="panel__status">LOADED</span>
+      </div>
+      <div class="panel__body">
+        <h2 class="section__title" id="skills-title">Kỹ năng</h2>
+        <div class="chips">
+          <span class="chip">Python / Flask</span>
+          <span class="chip">Docker</span>
+          <span class="chip">Linux / Ubuntu</span>
+          <span class="chip">HTML / CSS / JS</span>
+          <span class="chip">Git &amp; GitHub</span>
+          <span class="chip">Java</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="projects" class="panel" aria-labelledby="projects-title">
+      <div class="panel__bar">
+        <span class="panel__code">03</span>
+        <span class="panel__title">PROJECTS .DIR</span>
+        <span class="panel__status">3 ITEMS</span>
+      </div>
+      <div class="panel__body">
+        <h2 class="section__title" id="projects-title">Dự án tiêu biểu</h2>
+        <div class="cards">
+          <article class="card">
+            <h3 class="card__title">Website cá nhân trên Docker</h3>
+            <p class="card__desc">Trang giới thiệu bản thân, gửi thông điệp tới Telegram và banner cập nhật từ xa qua bot.</p>
+            <span class="tag">Flask · Docker · Telegram</span>
+          </article>
+          <article class="card">
+            <h3 class="card__title">Hệ thống quản lý ký túc xá</h3>
+            <p class="card__desc">Ứng dụng CRUD với phân quyền, tìm kiếm và thống kê phòng ở.</p>
+            <span class="tag">Java · MySQL</span>
+          </article>
+          <article class="card">
+            <h3 class="card__title">GreenhouseSystem</h3>
+            <p class="card__desc">Hệ thống giám sát cây trồng bằng ESP32S3.</p>
+            <span class="tag">Kotlin · Esp32s3</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="panel" aria-labelledby="contact-title">
+      <div class="panel__bar">
+        <span class="panel__code">04</span>
+        <span class="panel__title">UPLINK .SH</span>
+        <span class="panel__status"><span class="dot"></span> OPEN</span>
+      </div>
+      <div class="panel__body contact">
+        <div class="contact__info">
+          <h2 class="section__title" id="contact-title">Liên hệ</h2>
+          <ul class="contact__list">
+            <li><span class="contact__k">MAIL</span> <a href="mailto:trunghieu270306@gmail.com">trunghieu270306@gmail.com</a></li>
+            <li><span class="contact__k">GIT</span> <a href="https://github.com/HieuDZ609" target="_blank" rel="noopener">github.com/HieuDZ609</a></li>
+            <li><span class="contact__k">LOC</span> Việt Nam</li>
+          </ul>
+        </div>
+        <form class="message-form" id="messageForm" novalidate>
+          <h2 class="section__title">Gửi thông điệp cho mình</h2>
+          <label class="field">
+            <span class="field__label">Nội dung</span>
+            <textarea id="messageInput" name="message" rows="5"
+              maxlength="500" placeholder="> nhập lời nhắn của bạn..." required></textarea>
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary" id="sendBtn">SEND</button>
+            <span class="form-status" id="formStatus" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p class="prompt">encom_root<span class="prompt__path">:~$</span> END. PROGRAM</p>
+    <p>© <span id="year"></span> HÀ ĐIỀN TRUNG HIẾU · Triển khai bằng Docker trên Ubuntu Server 26.04.</p>
+    <p class="admin-link"><a href="/admin">ADMIN ▸ /admin</a></p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

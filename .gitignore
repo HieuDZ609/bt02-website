@@ -1,0 +1,18 @@
+# Bí mật - KHÔNG commit
+.env
+Dynamic_DNS
+
+# Dữ liệu phát sinh khi chạy
+data/*.json
+data/*.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store

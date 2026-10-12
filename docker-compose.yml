@@ -1,0 +1,14 @@
+services:
+  web:
+    build: .
+    image: krone1/bt02-website:1.0
+    container_name: bt02-website
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+      PORT: "8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
