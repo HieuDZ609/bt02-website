@@ -16,6 +16,15 @@ def _int(name: str, default: int) -> int:
 
 class Config:
     DISCORD_WEBHOOK_URL: str = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
+
+    # Telegram Bot: chiều ra (khách -> điện thoại) và chiều vào (admin -> banner)
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+    TELEGRAM_ADMIN_ID: str = os.getenv("TELEGRAM_ADMIN_ID", "").strip()
+    # Nơi nhận thông báo khách; mặc định nhận chung chat với admin
+    TELEGRAM_CHAT_ID: str = (
+        os.getenv("TELEGRAM_CHAT_ID", "").strip() or TELEGRAM_ADMIN_ID
+    )
+
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "").strip()
     SECRET_KEY: str = os.getenv("SECRET_KEY", "").strip() or secrets.token_hex(32)
 
@@ -31,4 +40,6 @@ class Config:
         "Chào mừng bạn đến với website cá nhân của mình!",
     )
 
-    NOTIFY_ENABLED: bool = bool(DISCORD_WEBHOOK_URL)
+    NOTIFY_DISCORD: bool = bool(DISCORD_WEBHOOK_URL)
+    NOTIFY_TELEGRAM: bool = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)
+    NOTIFY_ENABLED: bool = NOTIFY_DISCORD or NOTIFY_TELEGRAM

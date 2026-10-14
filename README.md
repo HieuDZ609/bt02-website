@@ -1,6 +1,6 @@
 # BT-02 — Website cá nhân trên Docker
 
-Website giới thiệu cá nhân chạy trong **Docker** trên **Ubuntu Server (VMware)**, báo tin nhắn từ khách tới điện thoại qua **Discord Webhook**, admin cập nhật banner từ xa, image đẩy lên **Docker Hub**, và phát hành ra Internet qua **Cloudflare Tunnel**.
+Website giới thiệu cá nhân chạy trong **Docker** trên **Ubuntu Server (VMware)**, báo tin nhắn từ khách tới điện thoại qua **Discord Webhook + Telegram Bot**, admin cập nhật banner từ xa (kể cả nhắn Telegram từ điện thoại), image đẩy lên **Docker Hub**, và phát hành ra Internet qua **Ngrok**. 
 
 > 🔗 **Link trực tiếp (live, cố định):** **https://tint-humped-december.ngrok-free.dev**
 >
@@ -11,8 +11,9 @@ Website giới thiệu cá nhân chạy trong **Docker** trên **Ubuntu Server (
 ## 1. Tính năng
 
 - Trang chủ giới thiệu cá nhân: **HÀ ĐIỀN TRUNG HIẾU**, sinh viên năm 3 trường **VKU - Đại học Việt - Hàn**, kỹ sư phần mềm — tông màu terminal ENCOM OS12.
-- Form **liên hệ**: khách điền tên + thông điệp → gửi về **Discord Webhook** (điện thoại nhận thông báo tức thì).
+- Form **liên hệ**: khách điền tên + thông điệp → gửi về **Discord Webhook** và **Telegram Bot** (điện thoại nhận thông báo tức thì).
 - Trang **admin** (`/admin`): đăng nhập bằng mật khẩu → cập nhật **banner** hiển thị trên trang chủ từ bất kỳ đâu (kể cả điện thoại qua Internet).
+- **Đổi banner từ điện thoại qua Telegram**: admin nhắn `/banner <nội dung>` cho bot → banner trang chủ cập nhật trong vài giây (không cần mở web).
 - Chống spam: giới hạn tần suất gửi (mặc định 1 lần/5 giây), chống brute-force đăng nhập (khoá IP sau 5 lần sai).
 - Chạy container phi-root (non-root user), healthcheck, `restart: unless-stopped`.
 
@@ -22,19 +23,22 @@ Website giới thiệu cá nhân chạy trong **Docker** trên **Ubuntu Server (
 |---|---|
 | Backend | Python 3.11 + Flask 3.0 + gunicorn |
 | Frontend | HTML/CSS/JS thuần, responsive |
-| Thông báo | Discord Webhook (requests) |
+| Thông báo | Discord Webhook + Telegram Bot API (long-poll) |
 | Triển khai | Docker (Dockerfile), Docker Compose |
 | Cơ sở dữ liệu | File JSON (`data/banner.json`) |
-| Public | Cloudflare Quick Tunnel (`cloudflared`) |
+| Public | Ngrok static domain (`ngrok/ngrok`) |
 
 ## 3. Cấu trúc thư mục
 
 ```
 BaiTap2/
 ├── app.py               # Flask app - routes chính
-├── config.py            # Cấu hình (webhook, mật khẩu, giới hạn tần suất...)
+├── config.py            # Cấu hình (webhook, Telegram, mật khẩu, giới hạn tần suất...)
 ├── storage.py           # Đọc/ghi banner.json (atomic)
 ├── discord_notify.py    # Gửi tin nhắn tới Discord Webhook
+├── telegram_notify.py   # Gửi tin nhắn tới Telegram (sendMessage)
+├── telegram_poller.py   # Long-poll getUpdates: admin /banner <nội dung> -> đổi banner
+├── notify.py            # Điều phối gửi song song Discord + Telegram
 ├── requirements.txt     # Flask, gunicorn, requests, python-dotenv
 ├── Dockerfile           # Image krone1/bt02-website:1.0
 ├── docker-compose.yml   # Orchestration + volume data
@@ -51,7 +55,10 @@ Copy `.env.example` → `.env` và điền giá trị thật:
 
 | Biến | Ý nghĩa |
 |---|---|
-| `DISCORD_WEBHOOK_URL` | URL Discord Webhook nhận tin nhắn liên hệ |
+| `DISCORD_WEBHOOK_URL` | URL Discord Webhook nhận tin nhắn liên hệ (tuỳ chọn) |
+| `TELEGRAM_BOT_TOKEN` | Token bot Telegram (từ @BotFather) — tuỳ chọn |
+| `TELEGRAM_ADMIN_ID` | chat_id Telegram của admin (được phép đổi banner) |
+| `TELEGRAM_CHAT_ID` | Nơi nhận thông báo khách (bỏ trống = dùng `TELEGRAM_ADMIN_ID`) |
 | `ADMIN_PASSWORD` | Mật khẩu trang admin |
 | `SECRET_KEY` | Khóa bảo mật Flask (đổi ngẫu nhiên) |
 | `RATE_LIMIT_SECONDS` | Số giây tối thiểu giữa 2 lần gửi (mặc định 5) |
@@ -59,6 +66,22 @@ Copy `.env.example` → `.env` và điền giá trị thật:
 | `LOGIN_LOCKOUT_SECONDS` | Thời gian khoá IP (giây) |
 
 > ⚠️ **Không bao giờ commit `.env`** — đã có trong `.gitignore` và `.dockerignore`.
+
+### Thiết lập Telegram Bot (đổi banner từ điện thoại)
+
+1. Nhắn **@BotFather** trên Telegram → `/newbot` → đặt tên → nhận `BOT_TOKEN`.
+2. Nhắn `/start` cho bot vừa tạo, rồi lấy `chat_id`:
+   ```bash
+   curl -s "https://api.telegram.org/bot<BOT_TOKEN>/getUpdates"
+   # đọc result[].message.chat.id   (hoặc nhắn @userinfobot để lấy id)
+   ```
+3. Điền `TELEGRAM_BOT_TOKEN` và `TELEGRAM_ADMIN_ID` vào `.env` rồi khởi động lại.
+4. Đổi banner từ điện thoại: nhắn **`/banner <nội dung>`** cho bot. Banner trang chủ
+   cập nhật trong vài giây. Bot cũng gửi thông báo khi khách điền form.
+
+> Cơ chế: app chạy một thread nền long-poll `getUpdates` (không cần webhook/public URL).
+> Chỉ tin từ `TELEGRAM_ADMIN_ID` mới đổi được banner; tin từ người khác bị bỏ qua.
+> Offset lưu tại `data/telegram_offset.json` nên không xử lý lại sau khi restart.
 
 ## 5. Chạy local (không Docker)
 
@@ -84,7 +107,7 @@ Hoặc bằng Compose:
 docker compose up -d --build
 ```
 
-Kiểm tra: `curl http://localhost:8000/health` → `{"notify":true,"status":"ok"}`
+Kiểm tra: `curl http://localhost:8000/health` → `{"status":"ok","notify":true,"channels":{"discord":true,"telegram":true},"poller":true}`
 
 ## 7. Triển khai lên VM (Ubuntu Server trên VMware)
 
@@ -145,7 +168,7 @@ Xem thư mục `.preview/`:
 | Route | Phương thức | Ý nghĩa |
 |---|---|---|
 | `/` | GET | Trang chủ giới thiệu |
-| `/send` | POST | Gửi liên hệ -> Discord (JSON `{name, message}`) |
+| `/send` | POST | Gửi liên hệ -> Discord + Telegram (JSON `{name, message}`) |
 | `/api/banner` | GET | Đọc banner hiện tại |
 | `/admin` | GET/POST | Đăng nhập quản trị |
 | `/admin/banner` | POST | Cập nhật banner (cần đăng nhập, xác thực qua session) |

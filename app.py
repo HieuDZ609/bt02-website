@@ -1,14 +1,18 @@
-"""Website cá nhân BT-02: Flask + Discord Webhook + trang admin.
+"""Website cá nhân BT-02: Flask + Discord/Telegram + trang admin.
 
 Routes:
   GET  /                trang chủ giới thiệu + banner + form gửi thông điệp
-  POST /send            khách gửi thông điệp -> push Discord tới điện thoại admin
+  POST /send            khách gửi thông điệp -> push tới điện thoại admin
   GET  /api/banner      lời nhắn mới nhất cho marquee (poll định kỳ)
   GET  /admin           trang quản trị (đăng nhập / cập nhật banner)
   POST /admin/login     xác thực mật khẩu admin
   POST /admin/banner    lưu lời nhắn mới (bắt buộc đã đăng nhập)
   POST /admin/logout    kết thúc phiên
   GET  /health          kiểm tra tình trạng cho Docker healthcheck
+
+Thông báo được đẩy song song qua Discord Webhook và Telegram Bot. Admin cũng
+có thể đổi banner từ điện thoại bằng cách nhắn /banner <nội dung> cho bot
+(xem telegram_poller.py).
 """
 import hmac
 import logging
@@ -18,8 +22,10 @@ import time
 from flask import Flask, jsonify, render_template, request, session
 
 from config import Config
-from discord_notify import send_message
+from notify import send_message
 from storage import get_banner, set_banner
+from telegram_poller import is_alive as telegram_poller_alive
+from telegram_poller import start as start_telegram_poller
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,6 +39,9 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
 )
+
+# Khởi động long-poll Telegram 1 lần cho worker này (an toàn với --workers 1).
+start_telegram_poller()
 
 _RATE_LOCK = threading.Lock()
 _LAST_SEND: dict[str, float] = {}
@@ -127,7 +136,7 @@ def send():
         return jsonify(
             {"ok": False, "error": "Không gửi được thông báo, thử lại sau."}
         ), 502
-    log.info("Đã chuyển thông điệp từ %s tới Discord", _client_ip())
+    log.info("Đã chuyển thông điệp từ %s tới Discord/Telegram", _client_ip())
     return jsonify({"ok": True, "message": "Đã gửi thông điệp, cảm ơn bạn!"})
 
 
@@ -210,7 +219,17 @@ def admin_logout():
 
 @app.get("/health")
 def health():
-    return jsonify({"status": "ok", "notify": Config.NOTIFY_ENABLED})
+    return jsonify(
+        {
+            "status": "ok",
+            "notify": Config.NOTIFY_ENABLED,
+            "channels": {
+                "discord": Config.NOTIFY_DISCORD,
+                "telegram": Config.NOTIFY_TELEGRAM,
+            },
+            "poller": telegram_poller_alive(),
+        }
+    )
 
 
 if __name__ == "__main__":
