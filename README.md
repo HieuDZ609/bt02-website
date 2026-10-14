@@ -2,7 +2,9 @@
 
 Website giới thiệu cá nhân chạy trong **Docker** trên **Ubuntu Server (VMware)**, báo tin nhắn từ khách tới điện thoại qua **Discord Webhook**, admin cập nhật banner từ xa, image đẩy lên **Docker Hub**, và phát hành ra Internet qua **Cloudflare Tunnel**.
 
-> 🔗 **Link trực tiếp (live):** **https://reasons-messages-titanium-juice.trycloudflare.com**
+> 🔗 **Link trực tiếp (live, cố định):** **https://tint-humped-december.ngrok-free.dev**
+>
+> _Ngrok free tier hiển thị trang cảnh báo "Visit Site" một lần cho khách bằng trình duyệt._
 
 ---
 
@@ -98,41 +100,38 @@ docker push krone1/bt02-website:1.0    # backup lên Docker Hub
 chown -R 100:101 /opt/bt02/data
 ```
 
-### Public ra Internet (Cloudflare Quick Tunnel — không cần mở cổng, chạy được cả sau CGNAT)
+### Public ra Internet (Ngrok — URL cố định, không cần mở cổng, chạy được sau CGNAT)
+
+Dịch vụ `ngrok` được thêm vào `docker-compose.yml`, dùng **static domain** cố định nên URL **không đổi** khi khởi động lại:
+
+```yaml
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: bt02-ngrok
+    restart: unless-stopped
+    depends_on:
+      - web
+    command: ["http", "web:8000", "--url=https://tint-humped-december.ngrok-free.dev", "--log", "stdout"]
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+```
+
+```bash
+# thêm NGROK_AUTHTOKEN vào .env rồi:
+docker compose up -d
+```
+
+> **Lưu ý free tier:** trình duyệt của khách sẽ gặp trang cảnh báo "You are about to visit…" bấm **Visit Site** mới vào. Client gửi header `ngrok-skip-browser-warning: true` sẽ bỏ qua. Muốn URL sạch không cảnh báo → dùng **Cloudflare Named Tunnel + tên miền**.
+
+### (Tuỳ chọn) Cloudflare Quick Tunnel
+
+Có thể chạy song song Cloudflare Quick Tunnel để có link dự phòng không cảnh báo (nhưng URL đổi mỗi lần restart):
 
 ```bash
 apt install cloudflared
-# chạy nền bền vững qua systemd:
-vim /etc/systemd/system/cloudflared-quick.service
-```
-
-`cloudflared-quick.service`:
-
-```ini
-[Unit]
-Description=Cloudflare Quick Tunnel for BT-02
-After=network-online.target docker.service
-
-[Service]
-ExecStart=/usr/local/bin/cloudflared tunnel --url http://localhost:8000 --no-autoupdate
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-systemctl daemon-reload && systemctl enable --now cloudflared-quick
-```
-
-**Lấy URL hiện tại** (Quick Tunnel đổi URL mỗi lần cloudflared/VM khởi động lại):
-
-```bash
+# systemd unit: cloudflared tunnel --url http://localhost:8000 --no-autoupdate
 journalctl -u cloudflared-quick --no-pager | grep -oE "https://[a-z0-9-]+\.trycloudflare\.com" | head -1
 ```
-
-> Muốn URL cố định + HTTPS: cần 1 tên miền (ví dụ `eu.org` miễn phí hoặc domain mua rẻ) rồi dùng **Cloudflare Named Tunnel**.
 
 ## 8. Minh chứng / Screenshot
 

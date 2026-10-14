@@ -12,3 +12,13 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/data
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: bt02-ngrok
+    restart: unless-stopped
+    depends_on:
+      - web
+    command: ["http", "web:8000", "--url=https://tint-humped-december.ngrok-free.dev", "--log", "stdout"]
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
