@@ -107,18 +107,23 @@ a:hover { color: #eafbff; }
   display: inline-flex;
   white-space: nowrap;
   will-change: transform;
-  animation: scroll-left 18s linear infinite;
 }
-.banner:hover .banner__track { animation-play-state: paused; }
+.banner__track.is-entering {
+  transition: transform var(--enter-duration, 6s) linear;
+}
+.banner__track.is-looping {
+  animation: ticker var(--loop-duration, 18s) linear infinite;
+}
+.banner:hover .banner__track.is-looping { animation-play-state: paused; }
 .banner__item {
   padding-right: 5rem;
   font-size: 0.86rem;
   color: var(--cyan);
 }
 .banner__item::before { content: "> "; color: var(--cyan-dim); }
-@keyframes scroll-left {
+@keyframes ticker {
   from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  to { transform: translateX(calc(-1 * var(--shift, 50%))); }
 }
 
 /* ---------- Khối panel kiểu terminal ---------- */
@@ -449,6 +454,9 @@ textarea:focus {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .banner__track, .scanlines, .caret, .dot { animation: none; }
+  .banner__track,
+  .banner__track.is-entering,
+  .banner__track.is-looping,
+  .scanlines, .caret, .dot { animation: none !important; transition: none !important; transform: none !important; }
   .btn, .card { transition: none; }
 }
