@@ -16,3 +16,6 @@ venv/
 .vscode/
 .idea/
 .DS_Store
+
+# Ảnh gốc dùng để dựng báo cáo (ảnh đã nhúng trong BAOCAO-*.docx/pdf)
+img/

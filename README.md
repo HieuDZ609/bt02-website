@@ -10,7 +10,7 @@ Website giới thiệu cá nhân chạy trong **Docker** trên **Ubuntu Server (
 
 ## 1. Tính năng
 
-- Trang chủ giới thiệu cá nhân: **HÀ ĐIỀN TRUNG HIẾU**, sinh viên năm 3 trường **VKU - Đại học Việt - Hàn**, kỹ sư phần mềm — tông màu terminal ENCOM OS12.
+- Trang chủ giới thiệu cá nhân: **HÀ ĐIỀN TRUNG HIẾU**, sinh viên năm 3 trường **TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN VÀ TRUYỂN THÔNG VIỆT HÀN (VKU)**, kỹ sư phần mềm — tông màu terminal ENCOM OS12.
 - Form **liên hệ**: khách điền tên + thông điệp → gửi về **Discord Webhook** và **Telegram Bot** (điện thoại nhận thông báo tức thì).
 - Trang **admin** (`/admin`): đăng nhập bằng mật khẩu → cập nhật **banner** hiển thị trên trang chủ từ bất kỳ đâu (kể cả điện thoại qua Internet).
 - **Đổi banner từ điện thoại qua Telegram**: admin nhắn `/banner <nội dung>` cho bot → banner trang chủ cập nhật trong vài giây (không cần mở web).
@@ -45,8 +45,7 @@ BaiTap2/
 ├── .env.example         # Mẫu biến môi trường (copy -> .env)
 ├── templates/           # index.html, admin.html
 ├── static/              # css/style.css, js/main.js, img/avatar.png
-├── data/                # banner.json (volume, giữ khi restart)
-└── .preview/            # Screenshot minh chứng
+└── data/                # banner.json (volume, giữ khi restart)
 ```
 
 ## 4. Cấu hình môi trường
@@ -189,14 +188,7 @@ apt install cloudflared
 journalctl -u cloudflared-quick --no-pager | grep -oE "https://[a-z0-9-]+\.trycloudflare\.com" | head -1
 ```
 
-## 8. Minh chứng / Screenshot
-
-Xem thư mục `.preview/`:
-- `shot-desktop.png` — giao diện desktop
-- `shot-mobile.png` — giao diện mobile
-- `shot-tablet.png` — giao diện tablet
-
-## 9. API tóm tắt
+## 8. API tóm tắt
 
 | Route | Phương thức | Ý nghĩa |
 |---|---|---|
@@ -207,14 +199,14 @@ Xem thư mục `.preview/`:
 | `/admin/banner` | POST | Cập nhật banner (cần đăng nhập, xác thực qua session) |
 | `/health` | GET | Healthcheck |
 
-## 10. Rubric báo cáo liên quan
+## 9. Rubric báo cáo liên quan
 
 - Image Docker Hub: `krone1/bt02-website:1.0` — https://hub.docker.com/r/krone1/bt02-website
 - GitHub: https://github.com/HieuDZ609/bt02-website
 - Server: Ubuntu 26.04 LTS trên VMware; container `bt02-website` Up (healthy), port `8000`.
 - Backup nhanh: `docker pull krone1/bt02-website:1.0 && docker compose up -d`
 
-## 11. Xử lý sự cố (troubleshooting)
+## 10. Xử lý sự cố (troubleshooting)
 
 | Triệu chứng | Nguyên nhân | Cách sửa |
 |---|---|---|
