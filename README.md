@@ -66,6 +66,10 @@ Copy `.env.example` → `.env` và điền giá trị thật:
 | `LOGIN_LOCKOUT_SECONDS` | Thời gian khoá IP (giây) |
 
 > ⚠️ **Không bao giờ commit `.env`** — đã có trong `.gitignore` và `.dockerignore`.
+>
+> 🚨 **ĐỪNG chạy `cp .env.example .env` khi `.env` đã tồn tại** — lệnh này sẽ **ghi đè
+> và xoá sạch secrets** (Discord/Telegram/Ngrok) khiến link chết. Chỉ tạo lần đầu bằng
+> `cp -n .env.example .env` (không ghi đè), hoặc sửa trực tiếp `.env` bằng editor.
 
 ### Thiết lập Telegram Bot (đổi banner từ điện thoại)
 
@@ -88,8 +92,8 @@ Copy `.env.example` → `.env` và điền giá trị thật:
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # rồi điền giá trị thật
-python app.py          # -> http://localhost:8000
+cp -n .env.example .env   # -n = chỉ tạo nếu chưa có (KHÔNG ghi đè .env cũ); rồi điền giá trị thật
+python app.py             # -> http://localhost:8000
 ```
 
 ## 6. Chạy bằng Docker
@@ -98,7 +102,8 @@ python app.py          # -> http://localhost:8000
 docker login            # đăng nhập Docker Hub
 docker build -t krone1/bt02-website:1.0 .
 docker run -d --name bt02-website --env-file .env \
-  -v ./data:/data -p 8000:8000 krone1/bt02-website:1.0
+  -v ./data:/data -p 8000:8000 --restart unless-stopped \
+  krone1/bt02-website:1.0
 ```
 
 Hoặc bằng Compose:
@@ -107,21 +112,49 @@ Hoặc bằng Compose:
 docker compose up -d --build
 ```
 
+> ⚠️ **Chọn 1 trong 2 cách, đừng chạy cả hai.** Compose đã tạo container tên
+> `bt02-website` chiếm cổng `8000`. Nếu chạy thêm `docker run` cùng tên/cổng sẽ lỗi:
+> `Conflict. The container name "/bt02-website" is already in use` hoặc
+> `Bind for 0.0.0.0:8000 failed: port is already allocated`.
+> Dọn dẹp: `docker rm -f bt02-website1 bt02-website2` và `docker rmi <image-rác>`.
+
 Kiểm tra: `curl http://localhost:8000/health` → `{"status":"ok","notify":true,"channels":{"discord":true,"telegram":true},"poller":true}`
 
 ## 7. Triển khai lên VM (Ubuntu Server trên VMware)
 
 ```bash
-# cài Docker
+# 1) cài Docker
 curl -fsSL https://get.docker.com | sh
 
-# copy project lên VM (/opt/bt02) rồi
-docker compose up -d --build
-docker push krone1/bt02-website:1.0    # backup lên Docker Hub
+# 2) copy project lên VM (/opt/bt02) bằng rsync/scp/git (xem mục 7.1)
+#    LƯU Ý: KHÔNG copy đè file .env đang có secrets lên.
 
-# cấp quyền ghi cho volume (image chạy non-root UID 100/GID 101)
+# 3) tạo .env lần đầu (chỉ khi CHƯA có), rồi điền giá trị thật
+cp -n .env.example .env && nano .env      # -n: không ghi đè nếu .env đã tồn tại
+
+# 4) chạy stack (web + ngrok)
+docker compose up -d --build
+
+# 5) cấp quyền ghi cho volume (container chạy non-root UID 100/GID 101)
 chown -R 100:101 /opt/bt02/data
+
+# 6) backup image lên Docker Hub
+docker push krone1/bt02-website:1.0
 ```
+
+### 7.1 Chuyển code từ laptop lên VM
+
+```bash
+# rsync (khuyên dùng): đồng bộ code nhưng BỎ QUA .env và data để không mất secrets/banner
+rsync -az --delete \
+  --exclude='.env' --exclude='.git' --exclude='.venv' \
+  --exclude='data' --exclude='__pycache__' \
+  ./ root@<ip-vm>:/opt/bt02/
+```
+
+> 🚨 Tuyệt đối không để `.env` bị ghi đè. Nếu lỡ mất secrets, phải điền lại
+> `DISCORD_WEBHOOK_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_ID`, `NGROK_AUTHTOKEN`,
+> `ADMIN_PASSWORD`, `SECRET_KEY` rồi `docker compose up -d --force-recreate`.
 
 ### Public ra Internet (Ngrok — URL cố định, không cần mở cổng, chạy được sau CGNAT)
 
@@ -180,3 +213,19 @@ Xem thư mục `.preview/`:
 - GitHub: https://github.com/HieuDZ609/bt02-website
 - Server: Ubuntu 26.04 LTS trên VMware; container `bt02-website` Up (healthy), port `8000`.
 - Backup nhanh: `docker pull krone1/bt02-website:1.0 && docker compose up -d`
+
+## 11. Xử lý sự cố (troubleshooting)
+
+| Triệu chứng | Nguyên nhân | Cách sửa |
+|---|---|---|
+| `Conflict. The container name "/bt02-website" is already in use` | Đã có container (compose) cùng tên | Dùng compose **hoặc** `docker run`, đừng cả hai; hoặc `docker rm -f <tên>` |
+| `Bind for 0.0.0.0:8000 failed: port is already allocated` | Cổng 8000 đang bị container khác chiếm | `docker compose down` rồi `docker compose up -d`, hoặc đổi `-p 8001:8000` |
+| `docker compose ps` thấy `ngrok ... Restarting` | Thiếu `NGROK_AUTHTOKEN` trong `.env` | Điền lại token rồi `docker compose up -d --force-recreate` |
+| `/health` báo `discord:false, telegram:false` | `.env` bị ghi đè/rỗng | Khôi phục secrets trong `.env` rồi recreate |
+| `Permission denied` khi ghi `/data` | Sai chủ sở hữu volume | `chown -R 100:101 /opt/bt02/data` |
+| Link ngrok chết | VM tắt hoặc container ngrok down | Bật VM, `docker compose up -d` (URL cố định nên vẫn cũ) |
+| Banner không đổi khi nhắn `/banner` | Sai `TELEGRAM_ADMIN_ID` | So lại chat_id trong `getUpdates`, khởi động lại |
+| Poller báo lỗi `409 Conflict` | Có nơi khác cũng gọi `getUpdates` | Chỉ để 1 poller chạy; tránh gọi `getUpdates` thủ công |
+
+> 🚨 Lỗi phổ biến nhất: chạy `cp .env.example .env` khi `.env` đã tồn tại → **mất secrets**.
+> Luôn dùng `cp -n` hoặc sửa trực tiếp `.env`.
